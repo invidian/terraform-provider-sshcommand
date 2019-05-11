@@ -49,6 +49,11 @@ func resourceCommand() *schema.Resource {
 				Default:      "5m",
 				ValidateFunc: validateTimeoutFunc(),
 			},
+			"ignore_execute_errors": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"result": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -60,6 +65,7 @@ func resourceCommand() *schema.Resource {
 func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 	host := d.Get("host").(string)
 	command := d.Get("command").(string)
+	ignore_execute_errors := d.Get("ignore_execute_errors").(bool)
 	signer, err := ssh.ParsePrivateKey([]byte(d.Get("private_key").(string)))
 	if err != nil {
 		return fmt.Errorf("Unable to parse private key: %v", err)
@@ -101,7 +107,7 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	output, err := session.Output(command)
-	if err != nil {
+	if err != nil && !ignore_execute_errors {
 		return fmt.Errorf("Command execution failed: %v", err)
 	}
 
