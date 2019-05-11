@@ -1,4 +1,4 @@
-package main
+package sshcommand
 
 import (
 	"crypto/sha256"
