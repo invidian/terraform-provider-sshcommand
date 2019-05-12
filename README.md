@@ -59,6 +59,15 @@ resource "sshcommand_command" "ssh_host_fingerprints" {
   command            = "ssh-keygen -r $(hostname -f) | cut -d' ' -f4-6"
   private_key        = "${file(".ssh/id_rsa")}"
 }
+
+# Reboot server after OS installation
+resource "sshcommand_command" "reboot" {
+  host                  = "${var.node_ip}"
+  command               = "reboot"
+  private_key           = "${var.ssh_private_key}"
+  ignore_execute_errors = true
+  depends_on            = [ "null_resource.os_install" ]
+}
 ```
 
 ## Authors
