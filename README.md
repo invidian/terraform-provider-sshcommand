@@ -39,7 +39,10 @@ This resource executes given command on remote system and stores it's output in 
   - `command` - Command to execute.
   - `user` - User used for SSH log in. Default value is `root`.
   - `port` - Port to open SSH connection. Default is 22.
-  - `connection_timeout` - Timeout for opening TCP connection. Default is `5m`.
+  - `connection_timeout` - Timeout for opening TCP connection. This should be decreased when using `retry`. Default is `5m`.
+  - `retry` - If this is set to true, plugin will retry to connect/execute command until retry_timeout is reached. Default to 'false'.
+  - `retry_timeout` - Time after which retry logic should time out. Default to `5m`.
+  - `retry_interval` - Specifies how long to wait between each attemt. Default to `5s`.
 
 #### Attributes
   - `result` - Output of executed command.
@@ -67,6 +70,16 @@ resource "sshcommand_command" "reboot" {
   private_key           = "${var.ssh_private_key}"
   ignore_execute_errors = true
   depends_on            = [ "null_resource.os_install" ]
+}
+
+# Make sure you SSH into correct system
+resource "sshcommand_command" "wait_for_os" {
+  host           = "${var.node_ip}"
+  command        = "grep ID=flatcar /etc/os-release"
+  private_key    = "${var.ssh_private_key}"
+  # If grep fails or SSH connection gets refused, resource will be trying again.
+  retry          = true
+  retry_interval = "1s"
 }
 ```
 
