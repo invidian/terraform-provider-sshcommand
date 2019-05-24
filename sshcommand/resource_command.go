@@ -54,6 +54,23 @@ func resourceCommand() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"retry": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"retry_timeout": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "5m",
+				ValidateFunc: validateTimeoutFunc(),
+			},
+			"retry_interval": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "5s",
+				ValidateFunc: validateTimeoutFunc(),
+			},
 			"result": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -62,10 +79,43 @@ func resourceCommand() *schema.Resource {
 	}
 }
 
+// This function opens TCP connection, SSH connection, executes given command and returns it's output
+func executeSSH(sshConfig *ssh.ClientConfig, address string, command string) ([]byte, bool, error) {
+	connection, err := ssh.Dial("tcp", address, sshConfig)
+	if err != nil {
+		return []byte{}, false, fmt.Errorf("Failed to open SSH connection: %s", err)
+	}
+
+	session, err := connection.NewSession()
+	if err != nil {
+		return []byte{}, false, fmt.Errorf("Failed to create session: %s", err)
+	}
+	defer session.Close()
+
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          0,     // disable echoing
+		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
+		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
+	}
+
+	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
+		return []byte{}, false, fmt.Errorf("request for pseudo terminal failed: %s", err)
+	}
+
+	output, err := session.Output(command)
+	if err != nil {
+		return []byte{}, true, fmt.Errorf("Command execution failed: %v", err)
+	}
+
+	return output, false, nil
+}
+
 func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 	host := d.Get("host").(string)
 	command := d.Get("command").(string)
 	ignore_execute_errors := d.Get("ignore_execute_errors").(bool)
+	retry := d.Get("retry").(bool)
+
 	signer, err := ssh.ParsePrivateKey([]byte(d.Get("private_key").(string)))
 	if err != nil {
 		return fmt.Errorf("Unable to parse private key: %v", err)
@@ -74,6 +124,16 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 	connection_timeout, err := time.ParseDuration(d.Get("connection_timeout").(string))
 	if err != nil {
 		return fmt.Errorf("Unable to parse connection timeout: %v", err)
+	}
+
+	retryTimeout, err := time.ParseDuration(d.Get("retry_timeout").(string))
+	if err != nil {
+		return fmt.Errorf("Unable to parse connection timeout: %v", err)
+	}
+
+	retryInterval, err := time.ParseDuration(d.Get("retry_interval").(string))
+	if err != nil {
+		return fmt.Errorf("Unable to parse retry interval: %v", err)
 	}
 
 	sshConfig := &ssh.ClientConfig{
@@ -85,33 +145,38 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, d.Get("port").(int)), sshConfig)
-	if err != nil {
-		return fmt.Errorf("Failed to open SSH connection: %s", err)
+	address := fmt.Sprintf("%s:%d", host, d.Get("port").(int))
+	var output []byte
+	var execute bool
+
+	// If retry is enabled, try to run command until we timeout
+	if retry {
+		start := time.Now()
+		// Try until we timeout
+		for time.Since(start) < retryTimeout {
+			output, execute, err = executeSSH(sshConfig, address, command)
+			// If command executed succesfully, we can finish
+			if err == nil {
+				break
+			}
+			// Wait specified interval between attempts
+			time.Sleep(retryInterval)
+		}
+
+		// If command returned error, check if we can tolerate it
+		if err != nil && !(execute && ignore_execute_errors) {
+			return err
+		}
+	} else {
+		output, execute, err = executeSSH(sshConfig, address, command)
+		if err != nil && !(execute && ignore_execute_errors) {
+			return err
+		}
 	}
 
-	session, err := connection.NewSession()
-	if err != nil {
-		return fmt.Errorf("Failed to create session: %s", err)
+	if err := d.Set("result", string(output)); err != nil {
+		return err
 	}
-	defer session.Close()
-
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,     // disable echoing
-		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
-	}
-
-	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
-		return fmt.Errorf("request for pseudo terminal failed: %s", err)
-	}
-
-	output, err := session.Output(command)
-	if err != nil && !ignore_execute_errors {
-		return fmt.Errorf("Command execution failed: %v", err)
-	}
-
-	d.Set("result", string(output)) //nolint:errcheck
 
 	d.SetId(sha256sum(fmt.Sprintf("%s-%s", host, command)))
 
