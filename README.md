@@ -42,7 +42,7 @@ This resource executes given command on remote system and stores it's output in 
   - `connection_timeout` - Timeout for opening TCP connection. This should be decreased when using `retry`. Default is `5m`.
   - `retry` - If this is set to true, plugin will retry to connect/execute command until retry_timeout is reached. Default to 'false'.
   - `retry_timeout` - Time after which retry logic should time out. Default to `5m`.
-  - `retry_interval` - Specifies how long to wait between each attemt. Default to `5s`.
+  - `retry_interval` - Specifies how long to wait between each attempt. Default to `5s`.
 
 #### Attributes
   - `result` - Output of executed command.
