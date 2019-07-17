@@ -155,7 +155,7 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 		// Try until we timeout
 		for time.Since(start) < retryTimeout {
 			output, execute, err = executeSSH(sshConfig, address, command)
-			// If command executed succesfully, we can finish
+			// If command executed successfully, we can finish
 			if err == nil {
 				break
 			}
