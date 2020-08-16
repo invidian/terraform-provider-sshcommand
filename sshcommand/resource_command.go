@@ -125,7 +125,7 @@ func executeSSH(sshConfig *ssh.ClientConfig, address string, command string) ([]
 func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 	host := d.Get("host").(string)
 	command := d.Get("command").(string)
-	ignore_execute_errors := d.Get("ignore_execute_errors").(bool)
+	ignoreExecuteErrors := d.Get("ignore_execute_errors").(bool)
 	retry := d.Get("retry").(bool)
 
 	signer, err := ssh.ParsePrivateKey([]byte(d.Get("private_key").(string)))
@@ -133,7 +133,7 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("Unable to parse private key: %v", err)
 	}
 
-	connection_timeout, err := time.ParseDuration(d.Get("connection_timeout").(string))
+	connectionTimeout, err := time.ParseDuration(d.Get("connection_timeout").(string))
 	if err != nil {
 		return fmt.Errorf("Unable to parse connection timeout: %v", err)
 	}
@@ -152,13 +152,15 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		Timeout:         connection_timeout,
+		Timeout:         connectionTimeout,
 		User:            d.Get("user").(string),
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	address := fmt.Sprintf("%s:%d", host, d.Get("port").(int))
+
 	var output []byte
+
 	var execute bool
 
 	// If retry is enabled, try to run command until we timeout
@@ -176,12 +178,12 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 
 		// If command returned error, check if we can tolerate it
-		if err != nil && !(execute && ignore_execute_errors) {
+		if err != nil && !(execute && ignoreExecuteErrors) {
 			return err
 		}
 	} else {
 		output, execute, err = executeSSH(sshConfig, address, command)
-		if err != nil && !(execute && ignore_execute_errors) {
+		if err != nil && !(execute && ignoreExecuteErrors) {
 			return err
 		}
 	}
@@ -197,20 +199,20 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 
 func validatePrivateKeyFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (we []string, errors []error) {
-		_, err := ssh.ParsePrivateKey([]byte(v.(string)))
-		if err != nil {
+		if _, err := ssh.ParsePrivateKey([]byte(v.(string))); err != nil {
 			errors = append(errors, fmt.Errorf("Unable to parse private key: %v", err))
 		}
+
 		return
 	}
 }
 
 func validateTimeoutFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (we []string, errors []error) {
-		_, err := time.ParseDuration(v.(string))
-		if err != nil {
+		if _, err := time.ParseDuration(v.(string)); err != nil {
 			errors = append(errors, fmt.Errorf("Unable to parse connection timeout: %v", err))
 		}
+
 		return
 	}
 }
