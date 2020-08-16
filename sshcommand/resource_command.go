@@ -160,7 +160,7 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 		},
 		Timeout:         connectionTimeout,
 		User:            d.Get("user").(string),
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // nolint:gosec
 	}
 
 	address := fmt.Sprintf("%s:%d", host, d.Get("port").(int))
