@@ -9,6 +9,18 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+const (
+	// DefaultSSHPort represents default port used for SSH connections.
+	DefaultSSHPort = 22
+
+	// DefaultTimeout represents default timeout for long-standing operations
+	// like connecting or retrying the execution.
+	DefaultTimeout = "5m"
+
+	// TTYSpeed defines virtual terminal default input and output speed.
+	TTYSpeed = 14400
+)
+
 func resourceCommand() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceCommandCreate,
@@ -41,12 +53,12 @@ func resourceCommand() *schema.Resource {
 			"port": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  22,
+				Default:  DefaultSSHPort,
 			},
 			"connection_timeout": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "5m",
+				Default:      DefaultTimeout,
 				ValidateFunc: validateTimeoutFunc(),
 			},
 			"ignore_execute_errors": {
@@ -62,7 +74,7 @@ func resourceCommand() *schema.Resource {
 			"retry_timeout": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "5m",
+				Default:      DefaultTimeout,
 				ValidateFunc: validateTimeoutFunc(),
 			},
 			"retry_interval": {
@@ -94,8 +106,8 @@ func executeSSH(sshConfig *ssh.ClientConfig, address string, command string) ([]
 
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          0,        // Disable echoing.
-		ssh.TTY_OP_ISPEED: ttySpeed, // Input speed = 14.4kbaud.
-		ssh.TTY_OP_OSPEED: ttySpeed, // Output speed = 14.4kbaud.
+		ssh.TTY_OP_ISPEED: TTYSpeed, // Input speed = 14.4kbaud.
+		ssh.TTY_OP_OSPEED: TTYSpeed, // Output speed = 14.4kbaud.
 	}
 
 	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
