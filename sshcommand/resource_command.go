@@ -79,7 +79,7 @@ func resourceCommand() *schema.Resource {
 	}
 }
 
-// This function opens TCP connection, SSH connection, executes given command and returns it's output
+// This function opens TCP connection, SSH connection, executes given command and returns it's output.
 func executeSSH(sshConfig *ssh.ClientConfig, address string, command string) ([]byte, bool, error) {
 	connection, err := ssh.Dial("tcp", address, sshConfig)
 	if err != nil {
@@ -93,9 +93,9 @@ func executeSSH(sshConfig *ssh.ClientConfig, address string, command string) ([]
 	defer session.Close()
 
 	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,     // disable echoing
-		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
+		ssh.ECHO:          0,        // Disable echoing.
+		ssh.TTY_OP_ISPEED: ttySpeed, // Input speed = 14.4kbaud.
+		ssh.TTY_OP_OSPEED: ttySpeed, // Output speed = 14.4kbaud.
 	}
 
 	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
