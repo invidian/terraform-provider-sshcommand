@@ -3,6 +3,7 @@ package sshcommand
 import (
 	"crypto/sha256"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -102,7 +103,12 @@ func executeSSH(sshConfig *ssh.ClientConfig, address string, command string) ([]
 	if err != nil {
 		return []byte{}, false, fmt.Errorf("Failed to create session: %s", err)
 	}
-	defer session.Close()
+
+	defer func() {
+		if err := session.Close(); err != nil {
+			log.Printf("%s: closing SSH session: %v", address, err)
+		}
+	}()
 
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          0,        // Disable echoing.
