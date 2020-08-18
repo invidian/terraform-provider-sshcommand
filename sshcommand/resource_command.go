@@ -228,6 +228,8 @@ func resourceCommandRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceCommandDelete(d *schema.ResourceData, m interface{}) error {
+	d.SetId("")
+
 	return nil
 }
 
