@@ -28,7 +28,7 @@ func resourceCommand() *schema.Resource {
 		// Those 2 functions below does nothing, but must be implemented.
 		Read:   resourceCommandRead,
 		Delete: resourceCommandDelete,
-		// Reuse create for updating
+		// Reuse create for updating.
 		Update: resourceCommandCreate,
 
 		Schema: map[string]*schema.Schema{
