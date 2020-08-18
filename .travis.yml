@@ -1,8 +1,7 @@
 language: go
 
 go:
-  - '1.11'
-  - '1.12'
+  - '1.15'
   - master
 
 git:
@@ -15,12 +14,18 @@ matrix:
   allow_failures:
     - go: master
 
-install: go get
+install: make download
 
 before_script:
-  - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $HOME/bin v1.16.0
+  - make install-ci
 
 script:
-  - go build -v
-  - go test
-  - golangci-lint run
+  - make all-cover
+
+after_script:
+  - make cover-upload EXIT_CODE=$TRAVIS_TEST_RESULT
+
+# Build only master branch triggered by merge commits. Other branches should be built via PR trigger.
+branches:
+  only:
+  - master

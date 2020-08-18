@@ -1,22 +1,15 @@
-package sshcommand
+package sshcommand_test
 
 import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/terraform"
+
+	"github.com/invidian/terraform-provider-sshcommand/sshcommand"
 )
 
-var testProviders map[string]terraform.ResourceProvider
-
-func init() {
-	testProviders = map[string]terraform.ResourceProvider{
-		"sshcommand": Provider(),
-	}
-}
-
 func TestProvider(t *testing.T) {
-	if err := Provider().(*schema.Provider).InternalValidate(); err != nil {
+	if err := sshcommand.Provider().(*schema.Provider).InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }

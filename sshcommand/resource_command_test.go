@@ -1,1 +1,1 @@
-package sshcommand
+package sshcommand_test

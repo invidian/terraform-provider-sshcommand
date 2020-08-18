@@ -37,12 +37,13 @@ This resource executes given command on remote system and stores it's output in 
   - `host` - Hostname to connect.
   - `private_key` - SSH private key used for authentication (SSH Agent support is not implemented).
   - `command` - Command to execute.
-  - `user` - User used for SSH log in. Default value is `root`.
-  - `port` - Port to open SSH connection. Default is 22.
-  - `connection_timeout` - Timeout for opening TCP connection. This should be decreased when using `retry`. Default is `5m`.
-  - `retry` - If this is set to true, plugin will retry to connect/execute command until retry_timeout is reached. Default to 'false'.
-  - `retry_timeout` - Time after which retry logic should time out. Default to `5m`.
-  - `retry_interval` - Specifies how long to wait between each attempt. Default to `5s`.
+  - `user` - User used for SSH log in. Defaults value is `root`.
+  - `port` - Port to open SSH connection. Defaults is `22`.
+  - `connection_timeout` - Timeout for opening TCP connection. This should be decreased when using `retry`. Defaults is `5m`.
+  - `retry` - If this is set to true, plugin will retry to connect/execute command until `retry_timeout` is reached. Defaults to 'false'.
+  - `retry_timeout` - Time after which retry logic should time out. Defaults to `5m`.
+  - `retry_interval` - Specifies how long to wait between each attempt. Defaults to `5s`.
+  - `ignore_execute_errors` - If true, resource will be created even if executed command returns non 0 exit code. Defaults to `false`.
 
 #### Attributes
   - `result` - Output of executed command.
@@ -60,23 +61,23 @@ output "example" {
 resource "sshcommand_command" "ssh_host_fingerprints" {
   host               = "example"
   command            = "ssh-keygen -r $(hostname -f) | cut -d' ' -f4-6"
-  private_key        = "${file(".ssh/id_rsa")}"
+  private_key        = file(".ssh/id_rsa")
 }
 
 # Reboot server after OS installation
 resource "sshcommand_command" "reboot" {
-  host                  = "${var.node_ip}"
+  host                  = var.node_ip
   command               = "reboot"
-  private_key           = "${var.ssh_private_key}"
+  private_key           = var.ssh_private_key
   ignore_execute_errors = true
   depends_on            = [ "null_resource.os_install" ]
 }
 
 # Make sure you SSH into correct system
 resource "sshcommand_command" "wait_for_os" {
-  host           = "${var.node_ip}"
+  host           = var.node_ip
   command        = "grep ID=flatcar /etc/os-release"
-  private_key    = "${var.ssh_private_key}"
+  private_key    = var.ssh_private_key
   # If grep fails or SSH connection gets refused, resource will be trying again.
   retry          = true
   retry_interval = "1s"
