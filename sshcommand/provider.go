@@ -12,5 +12,8 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"sshcommand_command": resourceCommand(),
 		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"sshcommand_command": dataSourceCommand(),
+		},
 	}
 }
