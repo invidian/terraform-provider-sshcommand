@@ -24,3 +24,8 @@ script:
 
 after_script:
   - make cover-upload EXIT_CODE=$TRAVIS_TEST_RESULT
+
+# Build only master branch triggered by merge commits. Other branches should be built via PR trigger.
+branches:
+  only:
+  - master
