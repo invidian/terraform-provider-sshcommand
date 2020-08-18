@@ -137,25 +137,10 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 	ignoreExecuteErrors := d.Get("ignore_execute_errors").(bool)
 	retry := d.Get("retry").(bool)
 
-	signer, err := ssh.ParsePrivateKey([]byte(d.Get("private_key").(string)))
-	if err != nil {
-		return fmt.Errorf("Unable to parse private key: %v", err)
-	}
-
-	connectionTimeout, err := time.ParseDuration(d.Get("connection_timeout").(string))
-	if err != nil {
-		return fmt.Errorf("Unable to parse connection timeout: %v", err)
-	}
-
-	retryTimeout, err := time.ParseDuration(d.Get("retry_timeout").(string))
-	if err != nil {
-		return fmt.Errorf("Unable to parse connection timeout: %v", err)
-	}
-
-	retryInterval, err := time.ParseDuration(d.Get("retry_interval").(string))
-	if err != nil {
-		return fmt.Errorf("Unable to parse retry interval: %v", err)
-	}
+	signer, _ := ssh.ParsePrivateKey([]byte(d.Get("private_key").(string)))
+	connectionTimeout, _ := time.ParseDuration(d.Get("connection_timeout").(string))
+	retryTimeout, _ := time.ParseDuration(d.Get("retry_timeout").(string))
+	retryInterval, _ := time.ParseDuration(d.Get("retry_interval").(string))
 
 	sshConfig := &ssh.ClientConfig{
 		Auth: []ssh.AuthMethod{
@@ -171,6 +156,8 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 	var output []byte
 
 	var executionError bool
+
+	var err error
 
 	// If retry is enabled, try to run command until we timeout
 	if retry {
