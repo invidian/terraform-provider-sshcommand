@@ -30,64 +30,67 @@ func resourceCommand() *schema.Resource {
 		Delete: resourceCommandDelete,
 		// Reuse create for updating.
 		Update: resourceCommandCreate,
+		Schema: resourceCommandSchema(),
+	}
+}
 
-		Schema: map[string]*schema.Schema{
-			"host": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"private_key": {
-				Type:         schema.TypeString,
-				Required:     true,
-				Sensitive:    true,
-				ValidateFunc: validatePrivateKeyFunc(),
-			},
-			"command": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"user": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "root",
-			},
-			"port": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  DefaultSSHPort,
-			},
-			"connection_timeout": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      DefaultTimeout,
-				ValidateFunc: validateTimeoutFunc(),
-			},
-			"ignore_execute_errors": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
-			"retry": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
-			"retry_timeout": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      DefaultTimeout,
-				ValidateFunc: validateTimeoutFunc(),
-			},
-			"retry_interval": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "5s",
-				ValidateFunc: validateTimeoutFunc(),
-			},
-			"result": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
+func resourceCommandSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"host": {
+			Type:     schema.TypeString,
+			Required: true,
+		},
+		"private_key": {
+			Type:         schema.TypeString,
+			Required:     true,
+			Sensitive:    true,
+			ValidateFunc: validatePrivateKeyFunc(),
+		},
+		"command": {
+			Type:     schema.TypeString,
+			Required: true,
+		},
+		"user": {
+			Type:     schema.TypeString,
+			Optional: true,
+			Default:  "root",
+		},
+		"port": {
+			Type:     schema.TypeInt,
+			Optional: true,
+			Default:  DefaultSSHPort,
+		},
+		"connection_timeout": {
+			Type:         schema.TypeString,
+			Optional:     true,
+			Default:      DefaultTimeout,
+			ValidateFunc: validateTimeoutFunc(),
+		},
+		"ignore_execute_errors": {
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  false,
+		},
+		"retry": {
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  false,
+		},
+		"retry_timeout": {
+			Type:         schema.TypeString,
+			Optional:     true,
+			Default:      DefaultTimeout,
+			ValidateFunc: validateTimeoutFunc(),
+		},
+		"retry_interval": {
+			Type:         schema.TypeString,
+			Optional:     true,
+			Default:      "5s",
+			ValidateFunc: validateTimeoutFunc(),
+		},
+		"result": {
+			Type:     schema.TypeString,
+			Computed: true,
 		},
 	}
 }
