@@ -96,12 +96,12 @@ func resourceCommand() *schema.Resource {
 func executeSSH(sshConfig *ssh.ClientConfig, address string, command string) ([]byte, bool, error) {
 	connection, err := ssh.Dial("tcp", address, sshConfig)
 	if err != nil {
-		return []byte{}, false, fmt.Errorf("Failed to open SSH connection: %s", err)
+		return []byte{}, false, fmt.Errorf("opening SSH connection: %s", err)
 	}
 
 	session, err := connection.NewSession()
 	if err != nil {
-		return []byte{}, false, fmt.Errorf("Failed to create session: %s", err)
+		return []byte{}, false, fmt.Errorf("creating SSH session: %s", err)
 	}
 
 	defer func() {
@@ -117,12 +117,12 @@ func executeSSH(sshConfig *ssh.ClientConfig, address string, command string) ([]
 	}
 
 	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
-		return []byte{}, false, fmt.Errorf("request for pseudo terminal failed: %s", err)
+		return []byte{}, false, fmt.Errorf("requesting pseudo terminal: %s", err)
 	}
 
 	output, err := session.Output(command)
 	if err != nil {
-		return []byte{}, true, fmt.Errorf("Command execution failed: %v", err)
+		return []byte{}, true, fmt.Errorf("executing command: %v", err)
 	}
 
 	return output, false, nil
@@ -195,7 +195,7 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if err := d.Set("result", string(output)); err != nil {
-		return err
+		return fmt.Errorf("setting %q field: %w", "result", err)
 	}
 
 	d.SetId(sha256sum(fmt.Sprintf("%s-%s", host, command)))
@@ -206,7 +206,7 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 func validatePrivateKeyFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (we []string, errors []error) {
 		if _, err := ssh.ParsePrivateKey([]byte(v.(string))); err != nil {
-			errors = append(errors, fmt.Errorf("Unable to parse private key: %v", err))
+			errors = append(errors, fmt.Errorf("parsing private key: %v", err))
 		}
 
 		return
@@ -216,7 +216,7 @@ func validatePrivateKeyFunc() schema.SchemaValidateFunc {
 func validateTimeoutFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (we []string, errors []error) {
 		if _, err := time.ParseDuration(v.(string)); err != nil {
-			errors = append(errors, fmt.Errorf("Unable to parse connection timeout: %v", err))
+			errors = append(errors, fmt.Errorf("parsing duration: %v", err))
 		}
 
 		return
