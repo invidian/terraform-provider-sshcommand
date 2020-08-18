@@ -1,1 +1,4 @@
-terraform-provider-sshcommand*
+/terraform-provider-sshcommand*
+/.terraform
+/terraform.tfstate*
+/main.tf
