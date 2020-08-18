@@ -3,7 +3,6 @@ package sshcommand
 import (
 	"crypto/sha256"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -95,100 +94,43 @@ func resourceCommandSchema() map[string]*schema.Schema {
 	}
 }
 
-// This function opens TCP connection, SSH connection, executes given command and returns it's output.
-func executeSSH(sshConfig *ssh.ClientConfig, address string, command string) ([]byte, bool, error) {
-	connection, err := ssh.Dial("tcp", address, sshConfig)
-	if err != nil {
-		return []byte{}, false, fmt.Errorf("opening SSH connection: %s", err)
-	}
-
-	session, err := connection.NewSession()
-	if err != nil {
-		return []byte{}, false, fmt.Errorf("creating SSH session: %s", err)
-	}
-
-	defer func() {
-		if err := session.Close(); err != nil {
-			log.Printf("%s: closing SSH session: %v", address, err)
-		}
-	}()
-
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,        // Disable echoing.
-		ssh.TTY_OP_ISPEED: TTYSpeed, // Input speed = 14.4kbaud.
-		ssh.TTY_OP_OSPEED: TTYSpeed, // Output speed = 14.4kbaud.
-	}
-
-	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
-		return []byte{}, false, fmt.Errorf("requesting pseudo terminal: %s", err)
-	}
-
-	output, err := session.Output(command)
-	if err != nil {
-		return []byte{}, true, fmt.Errorf("executing command: %v", err)
-	}
-
-	return output, false, nil
-}
-
-func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
-	host := d.Get("host").(string)
-	command := d.Get("command").(string)
-	ignoreExecuteErrors := d.Get("ignore_execute_errors").(bool)
-	retry := d.Get("retry").(bool)
-
-	signer, _ := ssh.ParsePrivateKey([]byte(d.Get("private_key").(string)))
+func resourceCommandToSSHExecutor(d *schema.ResourceData) sshExecutor {
 	connectionTimeout, _ := time.ParseDuration(d.Get("connection_timeout").(string))
 	retryTimeout, _ := time.ParseDuration(d.Get("retry_timeout").(string))
 	retryInterval, _ := time.ParseDuration(d.Get("retry_interval").(string))
+	signer, _ := ssh.ParsePrivateKey([]byte(d.Get("private_key").(string)))
 
-	sshConfig := &ssh.ClientConfig{
-		Auth: []ssh.AuthMethod{
+	return sshExecutor{
+		host:                d.Get("host").(string),
+		command:             d.Get("command").(string),
+		ignoreExecuteErrors: d.Get("ignore_execute_errors").(bool),
+		retry:               d.Get("retry").(bool),
+		authMethods: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		Timeout:         connectionTimeout,
-		User:            d.Get("user").(string),
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // nolint:gosec
+		timeout:       connectionTimeout,
+		user:          d.Get("user").(string),
+		retryTimeout:  retryTimeout,
+		retryInterval: retryInterval,
+		port:          d.Get("port").(int),
+	}
+}
+
+func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
+	e := resourceCommandToSSHExecutor(d)
+
+	// Execute the command.
+	output, err := e.execute()
+	if err != nil {
+		return fmt.Errorf("execution: %w", err)
 	}
 
-	address := fmt.Sprintf("%s:%d", host, d.Get("port").(int))
-
-	var output []byte
-
-	var executionError bool
-
-	var err error
-
-	// If retry is enabled, try to run command until we timeout
-	if retry {
-		start := time.Now()
-		// Try until we timeout
-		for time.Since(start) < retryTimeout {
-			output, executionError, err = executeSSH(sshConfig, address, command)
-			// If command executed successfully, we can finish
-			if err == nil {
-				break
-			}
-			// Wait specified interval between attempts
-			time.Sleep(retryInterval)
-		}
-
-		// If command returned error, check if we can tolerate it
-		if err != nil && !(executionError && ignoreExecuteErrors) {
-			return err
-		}
-	} else {
-		output, executionError, err = executeSSH(sshConfig, address, command)
-		if err != nil && !(executionError && ignoreExecuteErrors) {
-			return err
-		}
-	}
-
+	// Save result on success.
 	if err := d.Set("result", string(output)); err != nil {
 		return fmt.Errorf("setting %q field: %w", "result", err)
 	}
 
-	d.SetId(sha256sum(fmt.Sprintf("%s-%s", host, command)))
+	d.SetId(sha256sum(fmt.Sprintf("%s-%s", e.host, e.command)))
 
 	return nil
 }
