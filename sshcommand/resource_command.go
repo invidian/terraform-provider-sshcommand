@@ -170,14 +170,14 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 
 	var output []byte
 
-	var execute bool
+	var executionError bool
 
 	// If retry is enabled, try to run command until we timeout
 	if retry {
 		start := time.Now()
 		// Try until we timeout
 		for time.Since(start) < retryTimeout {
-			output, execute, err = executeSSH(sshConfig, address, command)
+			output, executionError, err = executeSSH(sshConfig, address, command)
 			// If command executed successfully, we can finish
 			if err == nil {
 				break
@@ -187,12 +187,12 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 
 		// If command returned error, check if we can tolerate it
-		if err != nil && !(execute && ignoreExecuteErrors) {
+		if err != nil && !(executionError && ignoreExecuteErrors) {
 			return err
 		}
 	} else {
-		output, execute, err = executeSSH(sshConfig, address, command)
-		if err != nil && !(execute && ignoreExecuteErrors) {
+		output, executionError, err = executeSSH(sshConfig, address, command)
+		if err != nil && !(executionError && ignoreExecuteErrors) {
 			return err
 		}
 	}
