@@ -37,12 +37,13 @@ This resource executes given command on remote system and stores it's output in 
   - `host` - Hostname to connect.
   - `private_key` - SSH private key used for authentication (SSH Agent support is not implemented).
   - `command` - Command to execute.
-  - `user` - User used for SSH log in. Default value is `root`.
-  - `port` - Port to open SSH connection. Default is 22.
-  - `connection_timeout` - Timeout for opening TCP connection. This should be decreased when using `retry`. Default is `5m`.
-  - `retry` - If this is set to true, plugin will retry to connect/execute command until retry_timeout is reached. Default to 'false'.
-  - `retry_timeout` - Time after which retry logic should time out. Default to `5m`.
-  - `retry_interval` - Specifies how long to wait between each attempt. Default to `5s`.
+  - `user` - User used for SSH log in. Defaults value is `root`.
+  - `port` - Port to open SSH connection. Defaults is `22`.
+  - `connection_timeout` - Timeout for opening TCP connection. This should be decreased when using `retry`. Defaults is `5m`.
+  - `retry` - If this is set to true, plugin will retry to connect/execute command until `retry_timeout` is reached. Defaults to 'false'.
+  - `retry_timeout` - Time after which retry logic should time out. Defaults to `5m`.
+  - `retry_interval` - Specifies how long to wait between each attempt. Defaults to `5s`.
+  - `ignore_execute_errors` - If true, resource will be created even if executed command returns non 0 exit code. Defaults to `false`.
 
 #### Attributes
   - `result` - Output of executed command.
