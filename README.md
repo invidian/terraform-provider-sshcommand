@@ -61,23 +61,23 @@ output "example" {
 resource "sshcommand_command" "ssh_host_fingerprints" {
   host               = "example"
   command            = "ssh-keygen -r $(hostname -f) | cut -d' ' -f4-6"
-  private_key        = "${file(".ssh/id_rsa")}"
+  private_key        = file(".ssh/id_rsa")
 }
 
 # Reboot server after OS installation
 resource "sshcommand_command" "reboot" {
-  host                  = "${var.node_ip}"
+  host                  = var.node_ip
   command               = "reboot"
-  private_key           = "${var.ssh_private_key}"
+  private_key           = var.ssh_private_key
   ignore_execute_errors = true
   depends_on            = [ "null_resource.os_install" ]
 }
 
 # Make sure you SSH into correct system
 resource "sshcommand_command" "wait_for_os" {
-  host           = "${var.node_ip}"
+  host           = var.node_ip
   command        = "grep ID=flatcar /etc/os-release"
-  private_key    = "${var.ssh_private_key}"
+  private_key    = var.ssh_private_key
   # If grep fails or SSH connection gets refused, resource will be trying again.
   retry          = true
   retry_interval = "1s"
