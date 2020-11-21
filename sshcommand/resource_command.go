@@ -33,6 +33,7 @@ func resourceCommand() *schema.Resource {
 	}
 }
 
+//nolint:funlen
 func resourceCommandSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		"host": {
@@ -138,7 +139,7 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 func validatePrivateKeyFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (we []string, errors []error) {
 		if _, err := ssh.ParsePrivateKey([]byte(v.(string))); err != nil {
-			errors = append(errors, fmt.Errorf("parsing private key: %v", err))
+			errors = append(errors, fmt.Errorf("parsing private key: %w", err))
 		}
 
 		return
@@ -148,7 +149,7 @@ func validatePrivateKeyFunc() schema.SchemaValidateFunc {
 func validateTimeoutFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (we []string, errors []error) {
 		if _, err := time.ParseDuration(v.(string)); err != nil {
-			errors = append(errors, fmt.Errorf("parsing duration: %v", err))
+			errors = append(errors, fmt.Errorf("parsing duration: %w", err))
 		}
 
 		return
