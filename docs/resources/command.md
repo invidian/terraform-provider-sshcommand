@@ -15,8 +15,10 @@ resource "sshcommand_command" "ssh_host_fingerprints" {
 ## Argument Reference
 
 * `host` - (Required) Hostname to connect.
-* `private_key` - (Required) SSH private key used for authentication (SSH Agent support is not implemented).
 * `command` - (Required) Command to execute.
+* `private_key` - (Optional) SSH private key used for authentication (SSH Agent support is not implemented).
+* `password` - (Optional) SSH password used for authentication. If combined with `private_key`, both authentication met
+hods will be attempted.
 * `user` - (Optional) User used for SSH log in. Defaults value is `root`.
 * `port` - (Optional) Port to open SSH connection. Defaults is `22`.
 * `connection_timeout` - (Optional) Timeout for opening TCP connection. This should be decreased when using `retry`. Defaults is `5m`.

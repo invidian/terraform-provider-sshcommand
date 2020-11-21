@@ -14,12 +14,12 @@ import (
 func createSSHSession(sshConfig *ssh.ClientConfig, address string) (*ssh.Session, error) {
 	connection, err := ssh.Dial("tcp", address, sshConfig)
 	if err != nil {
-		return nil, fmt.Errorf("opening SSH connection: %s", err)
+		return nil, fmt.Errorf("opening SSH connection: %w", err)
 	}
 
 	session, err := connection.NewSession()
 	if err != nil {
-		return nil, fmt.Errorf("creating SSH session: %s", err)
+		return nil, fmt.Errorf("creating SSH session: %w", err)
 	}
 
 	modes := ssh.TerminalModes{
@@ -29,7 +29,7 @@ func createSSHSession(sshConfig *ssh.ClientConfig, address string) (*ssh.Session
 	}
 
 	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
-		return nil, fmt.Errorf("requesting pseudo terminal: %s", err)
+		return nil, fmt.Errorf("requesting pseudo terminal: %w", err)
 	}
 
 	return session, nil
@@ -50,7 +50,7 @@ func executeSSH(sshConfig *ssh.ClientConfig, address string, command string) ([]
 
 	output, err := session.Output(command)
 	if err != nil {
-		return []byte{}, true, fmt.Errorf("executing command: %v", err)
+		return []byte{}, true, fmt.Errorf("executing command: %w", err)
 	}
 
 	return output, false, nil

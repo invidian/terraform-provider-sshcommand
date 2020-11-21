@@ -13,8 +13,8 @@ GOBUILD=CGO_ENABLED=$(CGO_ENABLED) $(GOCMD) build -v -buildmode=exe -ldflags $(L
 GO_PACKAGES=./...
 GO_TESTS=^.*$
 
-GOLANGCI_LINT_VERSION=v1.30.0
-DISABLED_LINTERS=gci,goerr113
+GOLANGCI_LINT_VERSION=v1.32.2
+DISABLED_LINTERS=gci,goerr113,exhaustivestruct
 
 BIN_PATH=$$HOME/bin
 

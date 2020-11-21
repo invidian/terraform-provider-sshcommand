@@ -33,6 +33,7 @@ func resourceCommand() *schema.Resource {
 	}
 }
 
+//nolint:funlen
 func resourceCommandSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		"host": {
@@ -41,9 +42,14 @@ func resourceCommandSchema() map[string]*schema.Schema {
 		},
 		"private_key": {
 			Type:         schema.TypeString,
-			Required:     true,
+			Optional:     true,
 			Sensitive:    true,
 			ValidateFunc: validatePrivateKeyFunc(),
+		},
+		"password": {
+			Type:      schema.TypeString,
+			Optional:  true,
+			Sensitive: true,
 		},
 		"command": {
 			Type:     schema.TypeString,
@@ -94,30 +100,46 @@ func resourceCommandSchema() map[string]*schema.Schema {
 	}
 }
 
-func resourceCommandToSSHExecutor(d *schema.ResourceData) sshExecutor {
+func resourceCommandToSSHExecutor(d *schema.ResourceData) (*sshExecutor, error) {
 	connectionTimeout, _ := time.ParseDuration(d.Get("connection_timeout").(string))
 	retryTimeout, _ := time.ParseDuration(d.Get("retry_timeout").(string))
 	retryInterval, _ := time.ParseDuration(d.Get("retry_interval").(string))
-	signer, _ := ssh.ParsePrivateKey([]byte(d.Get("private_key").(string)))
 
-	return sshExecutor{
+	authMethods := []ssh.AuthMethod{}
+
+	if pk := d.Get("private_key").(string); pk != "" {
+		signer, _ := ssh.ParsePrivateKey([]byte(d.Get("private_key").(string)))
+
+		authMethods = append(authMethods, ssh.PublicKeys(signer))
+	}
+
+	if p := d.Get("password").(string); p != "" {
+		authMethods = append(authMethods, ssh.Password(p))
+	}
+
+	if len(authMethods) == 0 {
+		return nil, fmt.Errorf("no auth methods specified")
+	}
+
+	return &sshExecutor{
 		host:                d.Get("host").(string),
 		command:             d.Get("command").(string),
 		ignoreExecuteErrors: d.Get("ignore_execute_errors").(bool),
 		retry:               d.Get("retry").(bool),
-		authMethods: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
-		timeout:       connectionTimeout,
-		user:          d.Get("user").(string),
-		retryTimeout:  retryTimeout,
-		retryInterval: retryInterval,
-		port:          d.Get("port").(int),
-	}
+		authMethods:         authMethods,
+		timeout:             connectionTimeout,
+		user:                d.Get("user").(string),
+		retryTimeout:        retryTimeout,
+		retryInterval:       retryInterval,
+		port:                d.Get("port").(int),
+	}, nil
 }
 
 func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
-	e := resourceCommandToSSHExecutor(d)
+	e, err := resourceCommandToSSHExecutor(d)
+	if err != nil {
+		return fmt.Errorf("initializing: %w", err)
+	}
 
 	// Execute the command.
 	output, err := e.execute()
@@ -138,7 +160,7 @@ func resourceCommandCreate(d *schema.ResourceData, meta interface{}) error {
 func validatePrivateKeyFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (we []string, errors []error) {
 		if _, err := ssh.ParsePrivateKey([]byte(v.(string))); err != nil {
-			errors = append(errors, fmt.Errorf("parsing private key: %v", err))
+			errors = append(errors, fmt.Errorf("parsing private key: %w", err))
 		}
 
 		return
@@ -148,7 +170,7 @@ func validatePrivateKeyFunc() schema.SchemaValidateFunc {
 func validateTimeoutFunc() schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (we []string, errors []error) {
 		if _, err := time.ParseDuration(v.(string)); err != nil {
-			errors = append(errors, fmt.Errorf("parsing duration: %v", err))
+			errors = append(errors, fmt.Errorf("parsing duration: %w", err))
 		}
 
 		return
